@@ -19,11 +19,13 @@ let notes = [
     }
 ]
 
+app.use(express.static('dist')) // serves the production build static files
+
 const requestLogger = (request, response, next) => {
-    console.log('Method:', request.method)
-    console.log('Path:  ', request.path)
-    console.log('Body:  ', request.body)
-    console.log('---')
+    // console.log('Method:', request.method)
+    // console.log('Path:  ', request.path)
+    // console.log('Body:  ', request.body)
+    // console.log('---')
     next()
 }
 
@@ -32,6 +34,7 @@ app.use(cors())
 
 app.use(express.json()) // activates the json-parser
 app.use(requestLogger)
+
 
 const unknownEndpoint = (request, response) => {
     response.status(400).send({error: "unknown endpoint"})
@@ -87,6 +90,18 @@ app.post('/api/notes', (request, response) => {
     notes = notes.concat(note)
 
     response.json(note)
+})
+
+app.put('/api/notes/:id', (request, response) => {
+    const id = request.params.id
+    const body = request.body
+
+    const note = notes.find(note => note.id === id) 
+    const changedNote = {...note, important: body.important}
+
+    notes = notes.map(note => note.id === id ? changedNote : note)
+
+    response.json(changedNote)
 })
 
 app.use(unknownEndpoint)

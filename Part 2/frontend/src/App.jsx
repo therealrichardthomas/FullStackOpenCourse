@@ -56,7 +56,6 @@ const App = () => {
   const notesToShow = showAll ? notes : notes.filter(note => note.important)
 
   const toggleImportanceOf = (id) => {
-    const url = `http://localhost:3001/notes/${id}`
     const note = notes.find(note => note.id === id) // retrieving the note we want to change
     const changedNote = {...note, important: !note.important} // changing the importance
 
