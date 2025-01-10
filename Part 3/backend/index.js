@@ -22,10 +22,10 @@ let notes = [
 app.use(express.static('dist')) // serves the production build static files
 
 const requestLogger = (request, response, next) => {
-    // console.log('Method:', request.method)
-    // console.log('Path:  ', request.path)
-    // console.log('Body:  ', request.body)
-    // console.log('---')
+    console.log('Method:', request.method)
+    console.log('Path:  ', request.path)
+    console.log('Body:  ', request.body)
+    console.log('---')
     next()
 }
 
