@@ -22,4 +22,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-../../Part 3/phonebook2/.env
+../Part 3/phonebook2/.env
