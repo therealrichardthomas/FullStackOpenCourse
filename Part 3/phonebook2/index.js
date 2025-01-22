@@ -1,8 +1,10 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
 
-app.use(express.json())
+const Person = require('./models/person')
 
 // creating a custom token to handle POST requests to add the extra information
 morgan.token('post-data', (req) => {
@@ -13,102 +15,102 @@ morgan.token('post-data', (req) => {
     }
 })
 
-// using the tiny configuration (can't do tiny + blah blah) and extend with the custom token
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'))
-
-let phonebook = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
-app.use(express.static('dist'))
-
-const cors = require('cors')
-app.use(cors())
-
-app.get("/", (request, response) => {
-    response.send(`<h1> Hello World!</h1>`)
-})
-
-app.get('/api/persons', (request, response) => {
-    response.json(phonebook)
-})
-
-app.get('/api/info/', (request, response) => {
-    response.send(`
-        <p>Phonebook has info for ${phonebook.length} people.</p> 
-        ${Date()}
-    `)
-})
-
-app.get('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    const person = phonebook.find(person => person.id === id)
-
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(204).end()
-    }
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    const newPhonebook = phonebook.filter(person => person.id !== id)
-    
-    phonebook = newPhonebook
-
-    response.json(newPhonebook)
-})
-
-const generateId = () => {
-    return String(Math.round(Math.random()*(1000000) + phonebook.length))
+// custom middleware
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
 }
 
-app.post('/api/persons', (request, response) => {
-    const body = request.body
-
-    const personDupe = phonebook.find(person => person.name === body.name)
-
-    if (!body.name || !body.number) {
-        return response.status(400).json({error: "missing name or number"})
-    } 
-    else if (personDupe) {
-        return response.status(400).json({error: 'name must be unique'})
+const errorHandler = (error, request, response, next) => {
+    console.log(error.message);
+    
+    if (error.name === 'CastError') {
+        return response.status(400).send({error: 'malformatted id'})
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).send({error: error.message})
     }
     
-    const person = {
-        id: generateId(),
-        name: body.name,    
-        number: body.number
-    }
+    next(error)
+}
 
-    phonebook = phonebook.concat(person)
+app.use(express.json()) // activates json-parser
+// using the tiny configuration (can't do tiny + blah blah) and extend with the custom token
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'))
+app.use(express.static('dist')) // serving static files
+app.use(cors()) // to use cross-origin
 
-    response.json(person)
+// home page
+app.get("/", (request, response) => {
+    response.send(`<h1>Hello World!</h1>`)
 })
 
+// whole phonebook retrieval
+app.get('/api/persons', (request, response) => {
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
+})
 
+// phonebook information
+app.get('/info', (request, response) => {
+    Person.countDocuments({})
+        .then(count => {
+            response.send(`
+                <p>Phonebook has info for ${count} people.</p> 
+                ${Date()}
+            `)
+        })
+})
 
+// individual person retrieval 
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).end() // if ID follows same format but doesn't exist
+            }
+        })
+        .catch(error => next(error)) // all other errors including malformatted errors
+})
 
+// person from phonebook deletion
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndDelete(request.params.id)
+        .then(result => {
+            response.status(204).end();
+        })
+        .catch(error => next(error))
+})
+
+// person to phonebook addition
+app.post('/api/persons', (request, response, next) => {
+    const body = request.body
+    
+    const person = new Person({
+        name: body.name,
+        number: body.number,
+    })
+
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
+    })
+    .catch(error => next(error))
+})
+
+// person's number update
+app.put('/api/persons/:id', (request, response, next) => {
+    const {name, number} = request.body
+
+    Person.findByIdAndUpdate(request.params.id, {name, number}, {new: true, runValidators: true, context: 'query'})
+        .then(updatedPerson => {
+            response.json(updatedPerson)
+        })
+        .catch(error => next(error))
+})
+
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {

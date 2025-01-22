@@ -62,6 +62,13 @@ const App = () => {
           setMessageType('success')
           setTimeout(() => setMessage(null), 5000)
         })
+        .catch(error => {
+          const errorMessage = error.response?.data?.error || 'An unexpected error occurred';
+          setMessage(errorMessage);
+          setMessageType('error')
+          setTimeout(() => setMessage(null), 5000)
+          // console.log("HELLO", error.response.data.error);
+        })
     }
   }
 
