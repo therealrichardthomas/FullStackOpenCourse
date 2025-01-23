@@ -67,7 +67,8 @@ const App = () => {
       })
       .catch(error => {
         setMessage(error.response.data.error)
-        setMessage('error')
+        setMessageType('error')
+        setTimeout(() => setMessage(null), 5000)
       })
   }
 
@@ -84,6 +85,7 @@ const App = () => {
         .catch(() => {
           setMessage('This person has already been deleted from the server')
           setMessageType('error')
+          setTimeout(() => setMessage(null), 5000)
         })
     }
   }
