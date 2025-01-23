@@ -77,7 +77,7 @@ const App = () => {
     if (window.confirm(`Delete ${deleted[0].name}`)) {
       personService
         .deletePerson(id)
-        .then(response => {
+        .then(() => {
           setPersons(persons.filter(person => person.id !== id))
           setMessage(`Successfully deleted '${deleted[0].name}' from the phonebook`)
           setMessageType('success')
