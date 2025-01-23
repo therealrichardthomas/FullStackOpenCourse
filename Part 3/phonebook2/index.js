@@ -56,7 +56,7 @@ app.get('/info', (request, response) => {
     .then(count => {
       response.send(`
         <p>Phonebook has info for ${count} people.</p> 
-        ${Date()}
+        <p>${Date()}</p>
       `)
     })
 })
@@ -66,7 +66,7 @@ app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then(person => {
       if (person) {
-        response.json(person)
+        response.json(person.toJSON())
       } else {
         response.status(404).end() // if ID follows same format but doesn't exist
       }
@@ -86,6 +86,10 @@ app.delete('/api/persons/:id', (request, response, next) => {
 // person to phonebook addition
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
+
+  if (body.name === undefined || body.number === undefined) {
+    return response.status(400).json({ error: 'name or number missing' })
+  }
 
   const person = new Person({
     name: body.name,
