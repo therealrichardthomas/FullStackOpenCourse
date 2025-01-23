@@ -22,54 +22,49 @@ const App = () => {
         })
   }, [])
 
-  const addPerson = (event) => {
-    event.preventDefault()
-    const personObject = {
-      name: newName,
-      number: newNumber,
-      id: String(persons.length + 1)
-    }
-
-    const checkPerson = persons.find(person => person.name === personObject.name)
-    const changedPerson = {...checkPerson, number: personObject.number}
-
-    if (checkPerson) {
-      if(window.confirm((`${personObject.name} is already added to the phonebook. Would you like to replace the old number with the new number?`))) {
-        personService
-          .update(checkPerson.id, changedPerson)
-          .then(requestedPerson => {
-            setPersons(persons.map(person => person.name === personObject.name ? requestedPerson : person))
-            setNewName('')
-            setNewNumber('')
-            setMessage(`Updated ${personObject.name}'s number`)
-            setMessageType('success')
-            setTimeout(() => setMessage(null), 5000)
-          })
-          .catch(() => {
-            setMessage(`Could not update ${personObject.name}'s number`)
-            setMessageType('error')
-            setTimeout(() => setMessage(null), 5000)
-          })
-        }
-      } else {
-        personService
-        .create(personObject)
-        .then(requestedPerson => {
-          setPersons(persons.concat(requestedPerson))
-          setNewName('')
-          setNewNumber('')
-          setMessage(`Added '${personObject.name}' to the phonebook`)
+  const updatePerson = (person) => {
+    const ok = window.confirm(`${newName} is already added to phonebook, replace the number?`)
+    if (ok) {
+      
+      personService.update(person.id, {...person, number: newNumber})
+        .then((updatedPerson) => {
+          setPersons(persons.map(p => p.id !== person.id ? p :updatedPerson ))
+          setMessage(`Updated ${updatedPerson.name}'s number`)
           setMessageType('success')
           setTimeout(() => setMessage(null), 5000)
         })
-        .catch(error => {
-          const errorMessage = error.response?.data?.error || 'An unexpected error occurred';
-          setMessage(errorMessage);
+        .catch(() => {
+          setMessage(`Could not update ${person.name}'s number`)
           setMessageType('error')
           setTimeout(() => setMessage(null), 5000)
-          // console.log("HELLO", error.response.data.error);
+          setPersons(persons.filter(p => p.id !== person.id))
         })
+
+      setNewName('')
+      setNewNumber('')
     }
+  }
+
+  const addPerson = (event) => {
+    event.preventDefault()
+    const person = persons.find(p => p.name === newName)
+
+    if (person) {
+      updatePerson(person)
+      return
+    }
+
+    personService.create({ name: newName, number: newNumber })
+      .then(createdPerson => {
+        setPersons(persons.concat(createdPerson))
+
+        setMessage(`Added '${createdPerson.name}' to the phonebook`)
+        setMessageType('success')
+        setTimeout(() => setMessage(null), 5000)
+
+        setNewName('')
+        setNewNumber('')
+      })
   }
 
   const deletion = (id) => {
