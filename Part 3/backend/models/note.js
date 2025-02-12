@@ -1,16 +1,7 @@
+/*
+  the note.js contains only the Note schema and doesn't handle the MongoDB connection
+*/
 const mongoose = require('mongoose')
-
-mongoose.set('strictQuery',false)
-
-const url = process.env.MONGODB_URI
-
-mongoose.connect(url)
-  .then(() => {
-    console.log('connected to MongoDB')
-  })
-  .catch(error => {
-    console.log('error connecting to MongoDB: ', error.message)
-  })
 
 const noteSchema = new mongoose.Schema({
   content: {
@@ -19,6 +10,10 @@ const noteSchema = new mongoose.Schema({
     required: true // the content is required and it must be a minimum of 5 characters
   },
   important: Boolean,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 })
 
 noteSchema.set('toJSON', {
