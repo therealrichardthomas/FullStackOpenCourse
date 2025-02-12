@@ -1,0 +1,11 @@
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOiI2N2E2MmE1MGYxZmUwMDFjZjE4NTdhN2QiLCJpYXQiOjE3MzkxOTI3Mjh9.1mAMtEQMCMtysI8L9pbTL6b6cbfq7JKRsb5tgygU2oU
+
+{
+  "title": "hello",
+  "author": "juju",
+  "url": "hello.com",
+  "likes": 1000,
+  "id": "67a632059f4d7c7e2ba5d3ad"
+}
