@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
-import Togglable from './components/Togglable' 
+import Togglable from './components/Togglable'
 import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
@@ -16,7 +16,7 @@ const App = () => {
     type: null
   })
 
-  const blogFormRef = useRef();
+  const blogFormRef = useRef()
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -34,9 +34,9 @@ const App = () => {
   }, [])
 
   const showNotification = (message, type) => {
-    setNotification({message, type})
+    setNotification( { message, type } )
     setTimeout(() => {
-      setNotification({message: null, type: null})
+      setNotification( { message: null, type: null } )
     }, 5000)
   }
 
@@ -49,7 +49,7 @@ const App = () => {
         showNotification(`a new blog ${returnedBlog.title} by ${returnedBlog.author} added`, 'success')
       })
       .catch(error => {
-        console.log("ERROR SHOWN HERE: ", error);
+        console.log('ERROR SHOWN HERE: ', error)
         showNotification('Unable to create new blog', 'error')
       })
   }
@@ -99,7 +99,7 @@ const App = () => {
 
       window.localStorage.setItem(
         'loggedBlogappUser', JSON.stringify(user)
-      ) 
+      )
 
       blogService.setToken(user.token)
       setUser(user)
@@ -111,7 +111,7 @@ const App = () => {
   }
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
+    if (window.confirm('Are you sure you want to logout?')) {
       window.localStorage.removeItem('loggedBlogappUser')
       setUser(null)
     }
@@ -151,7 +151,7 @@ const App = () => {
       </div>
     )
   }
-  
+
   return (
     <div>
       <h2>blogs</h2>

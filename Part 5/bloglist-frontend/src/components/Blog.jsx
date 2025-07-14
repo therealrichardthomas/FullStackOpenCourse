@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 
 
-const Blog = ({ blog,  updateBlog, deleteBlog, user}) => {
+const Blog = ({ blog,  updateBlog, deleteBlog, user }) => {
   const blogStyle = {
     paddingTop: 10,
     paddingLeft: 2,
@@ -66,10 +66,10 @@ const Blog = ({ blog,  updateBlog, deleteBlog, user}) => {
               <button style={deleteStyle} className="delete-btn" onClick={handleDelete}> remove </button>
             )}
           </div>
-          
+
         )}
 
-      </div>  
+      </div>
     </div>
   )
 }

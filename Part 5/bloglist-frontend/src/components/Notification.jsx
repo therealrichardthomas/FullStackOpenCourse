@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-
 const Notification = ({ notification }) => {
   if (notification.message === null) {
     return null
@@ -8,7 +6,7 @@ const Notification = ({ notification }) => {
   const styleType = notification.type === 'error' ? 'error' : 'success'
 
   return (
-    <div class={styleType}>
+    <div className={styleType}>
       {notification.message}
     </div>
   )

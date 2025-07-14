@@ -26,7 +26,9 @@ mongoose.connect(config.MONGODB_URI)
     logger.info('error connecting to MongoDB: ', error.message)
   })
 
-app.use(cors()) // activates the cross-origin
+app.use(cors({
+  origin: 'http://localhost:5173'
+})) // activates the cross-origin
 app.use(express.static('dist')) // serves the production build static files
 app.use(express.json()) // activates the json-parser
 app.use(middleware.requestLogger) // activates the custom requestLogger
@@ -34,6 +36,11 @@ app.use(middleware.requestLogger) // activates the custom requestLogger
 app.use('/api/notes', notesRouter)
 app.use('/api/users', userRouter)
 app.use('/api/login', loginRouter)
+
+if (process.env.NODE_ENV === 'test') {
+  const testingRouter = require('./controllers/testing')
+  app.use('/api/testing', testingRouter)
+}
 
 app.use(middleware.unknownEndpoint) // activates the unknownEndpoint middleware
 app.use(middleware.errorHandler) // activates the errorHandler middleware
