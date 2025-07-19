@@ -1,16 +1,29 @@
 import { useDispatch } from 'react-redux'
 import { createAnecdote } from '../reducers/anecdoteReducer'
-import { setNotification } from '../reducers/notificationReducer'
+import { useNotification } from '../NotificationContext'
 
 const AnecdoteForm = () => {
   const dispatch = useDispatch()
+  const { setNotification } = useNotification()
+
+  const validateAnecdote = (content) => {
+    if (content.length < 5) {
+      setNotification('too short anecdote, must have length 5 or more', 5)
+      return false
+    }
+    return true
+  }
 
   const addAnecdote = async (event) => {
     event.preventDefault()
     const content = event.target.anecdote.value
+    if (!validateAnecdote(content)) {
+      event.target.anecdote.value = ''
+      return
+    }
     event.target.anecdote.value = ''
     dispatch(createAnecdote(content))
-    dispatch(setNotification(`you created '${content}'`, 5))
+    setNotification(`you created '${content}'`, 5)
   }
 
   return (
