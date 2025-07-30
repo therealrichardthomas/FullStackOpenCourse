@@ -48,11 +48,45 @@ blogRouter.put('/:id', async (request, response) => {
     title: body.title,
     author: body.author,
     url: body.url,
-    likes: body.likes
+    likes: body.likes,
+    comments: body.comments
   }
 
-  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
+  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true, runValidators: true, context: 'query' })
   response.json(updatedBlog)
 })
+
+blogRouter.post('/:id/comments', async (request, response) => {
+  const { content } = request.body
+  const blog = await Blog.findById(request.params.id)
+
+  if (!blog) {
+    return response.status(404).json({ error: 'blog not found' })
+  }
+
+  const newComment = { content: content }
+  blog.comments.push(newComment)
+
+  const updatedBlog = await blog.save()
+
+  response.status(201).json(updatedBlog.comments[updatedBlog.comments.length - 1])
+})
+
+blogRouter.delete('/:id/comments/:commentId', async (request, response) => {
+  const blog = await Blog.findById(request.params.id)
+  const commentIdToDelete = request.params.commentId
+
+  if (!commentIdToDelete) {
+    response.status(404).json({ error: 'comment not found' })
+  }
+
+  if (blog) {
+    commentIdToDelete.deleteOne()
+    await blog.save()
+    response.status(204).end()
+  } else {
+    response.status(404).send({ error: 'Blog not found' })
+  }
+} )
 
 module.exports = blogRouter

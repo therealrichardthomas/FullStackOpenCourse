@@ -1,75 +1,61 @@
 import { useState } from 'react'
+import { likeBlog, deleteBlog } from '../reducers/blogReducer'
+import { useDispatch, useSelector } from 'react-redux'
+import { useParams } from 'react-router-dom'
+import CommentSection from './CommentSection'
 
+const Blog = () => {
+  const id = useParams().id
+  const blog = useSelector(state => state.blogs).find(blog => blog.id === id)
+  const user = useSelector(state => state.user)
+  const users = useSelector(state => state.users)
 
+  const dispatch = useDispatch()
 
-const Blog = ({ blog,  updateBlog, deleteBlog, user }) => {
-  const blogStyle = {
-    paddingTop: 10,
-    paddingLeft: 2,
-    border: 'solid',
-    borderWidth: 1,
-    marginBottom: 5
+  if (!blog) {
+    return <div> blog not found </div>
   }
 
-  const deleteStyle = {
-    backgroundColor: '#1e72fa',
-    borderRadius: 3,
-    color: 'black',
-    border: 'none',
-    padding: 3,
-    paddingLeft: 10,
-    paddingRight: 10
-  }
+  const blogUser = typeof blog.user === 'object' && blog.user !== null
+    ? blog.user
+    : users.find(u => u.id === blog.user)
 
-  const [visible, setVisible] = useState(false)
-  const [likes, setLikes] = useState(blog.likes)
-
-  const likedBlog = {
-    title: blog.title,
-    author: blog.author,
-    url: blog.url,
-    likes: likes + 1,
-    user: blog.user.id,
-    id: blog.id
-  }
 
   const addLike = () => {
-    setLikes(likes + 1)
-    updateBlog(likedBlog)
+    console.log("before liked: ", blog)
+    const likedBlog = {
+      ...blog,
+      likes: blog.likes + 1,
+      user: blogUser?.id || blog.user
+    }
+    dispatch(likeBlog(likedBlog))
   }
 
   const handleDelete = () => {
-    deleteBlog(blog)
+    if (window.confirm(`Remove blog ${blog.title} by ${blog.author}?`)) {
+      dispatch(deleteBlog(blog))
+    }
   }
 
-
   return (
-    <div style = { blogStyle }>
-      <div>
-        <div>
-          {blog.title} {blog.author} {' '}
+    <div className='w-full'>
+      <div className='mb-2 flex flex-col gap-2'>
+        <h2 className='text-3xl font-semibold'>{blog.title}</h2>
+        <div className="blog-url text-blue-500 underline decoration-solid">
+          <a href={blog.url}> {blog.url} </a>
         </div>
-        <button onClick={() => setVisible(!visible)}> {visible ? 'hide' : 'view' } </button>
-        {visible && (
-          <div>
-            <div className="blog-url">
-              <a href={blog.url}> {blog.url} </a>
-            </div>
-            <div className="blog-likes">
-              likes {blog.likes} {' '}
-              <button onClick={addLike}>like</button>
-            </div>
-            <div className="blog-adder">
-              {blog.user.username}
-            </div>
-            {user.username === blog.user.username && (
-              <button style={deleteStyle} className="delete-btn" onClick={handleDelete}> remove </button>
-            )}
-          </div>
-
+        <div className="blog-likes">
+          <span className='mr-2'>{blog.likes} likes</span>
+          <button className='bg-gray-300 px-3 rounded border' onClick={addLike}>like</button>
+        </div>
+        <div className="blog-adder">
+          added by <em>{blogUser?.username}</em>
+        </div>
+        {(user.id === blogUser?.id || user.username === blogUser?.username) && (
+          <button className='button bg-[#1e72fa] w-1/15 rounded-full' onClick={handleDelete}> remove </button>
         )}
-
       </div>
+      <CommentSection />
     </div>
   )
 }

@@ -1,54 +1,49 @@
-import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { createBlog } from '../reducers/blogReducer'
+import { showNotification } from '../reducers/notificationReducer'
+import { useField } from '../hooks/useField'
 
-const BlogForm = ({ createBlog }) => {
-  const [newTitle, setNewTitle] = useState('')
-  const [newAuthor, setNewAuthor] = useState('')
-  const [newUrl, setNewUrl] = useState('')
+const BlogForm = ({ hideForm, user}) => {
+  const { reset: resetTitle, ...titleProps } = useField('text')
+  const { reset: resetAuthor, ...authorProps } = useField('text')
+  const { reset: resetUrl, ...urlProps } = useField('text')
+  
+  const dispatch = useDispatch()
 
-  const addBlog = (event) => {
+  const addBlog = async (event) => {
     event.preventDefault()
-    createBlog({
-      title: newTitle,
-      author: newAuthor,
-      url: newUrl,
-    })
 
-    setNewTitle('')
-    setNewAuthor('')
-    setNewUrl('')
+    const newBlog = {
+      title: titleProps.value,
+      author: authorProps.value,
+      url: urlProps.value
+    }
+    dispatch(createBlog(newBlog, user))
+    resetTitle()
+    resetAuthor()
+    resetUrl()
+    hideForm()
   }
 
   return (
-    <>
-      <h2>create new</h2>
-      <form onSubmit={addBlog}>
-        <div>
+    <div>
+      <h2 className='italic'>create new</h2>
+      <form className='w-100' onSubmit={addBlog}>
+        <div className='flex flex-col'>
           title:
-          <input
-            value={newTitle}
-            onChange={({ target }) => setNewTitle(target.value)}
-            placeholder='write title'
-          />
+          <input name='title' className='border-2 border-black rounded-lg px-3' {...titleProps} />
         </div>
-        <div>
+        <div className='flex flex-col'>
           author:
-          <input
-            value={newAuthor}
-            onChange={({ target }) => setNewAuthor(target.value)}
-            placeholder='write author'
-          />
+          <input name='author' className='border-2 border-black rounded-lg px-3' {...authorProps} />
         </div>
-        <div>
+        <div className='flex flex-col'>
           url:
-          <input
-            value={newUrl}
-            onChange={({ target }) => setNewUrl(target.value)}
-            placeholder='write url'
-          />
+          <input name='url' className='border-2 border-black rounded-lg px-3' {...urlProps} />
         </div>
-        <button type="submit">create</button>
+        <button className='my-1 border-1 bg-emerald-300 rounded-2xl w-full' type="submit">create</button>
       </form>
-    </>
+    </div>
   )
 }
 
