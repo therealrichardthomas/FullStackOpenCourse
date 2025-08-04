@@ -1,16 +1,12 @@
 import { useQuery } from '@apollo/client'
 import { ALL_AUTHORS, ALL_BOOKS } from '../queries'
 
-const Filter = ({ author, genre, setAuthor, setGenre }) => {
+const Filter = ({ author, genre, setAuthor, setGenre, uniqueGenres }) => {
   const authors = useQuery(ALL_AUTHORS)
-  const books = useQuery(ALL_BOOKS)
 
-  if (authors.loading || books.loading) {
+  if (authors.loading) {
     return <div>loading...</div>
   }
-
-  const allGenres = books.data.allBooks.flatMap(book => book.genres)
-  const uniqueGenres = [...new Set(allGenres)]
 
   return (
     <div>

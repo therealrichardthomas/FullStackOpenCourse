@@ -11,7 +11,8 @@ const Books = (props) => {
   const result = useQuery(ALL_BOOKS, {
     variables: { name: author, genre }
   })
-
+  const { data: allBooksData } = useQuery(ALL_BOOKS)
+  
   if (!props.show) {
     return null
   }
@@ -25,11 +26,15 @@ const Books = (props) => {
   }
 
   const books = result.data ? result.data.allBooks : []
+  const allGenres = allBooksData.allBooks.flatMap(book => book.genres)
+  const uniqueGenres = [...new Set(allGenres)]
+
+
 
   return (
     <div>
       <h2>books</h2>
-      <Filter author={author} genre={genre} setAuthor={setAuthor} setGenre={setGenre} />
+      <Filter author={author} genre={genre} setAuthor={setAuthor} setGenre={setGenre} uniqueGenres={uniqueGenres} />
       <table>
         <tbody>
           <tr>
