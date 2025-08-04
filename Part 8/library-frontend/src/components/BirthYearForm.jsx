@@ -17,8 +17,6 @@ const BirthYearForm = () => {
     return <div>loading authors...</div>
   }
 
-  console.log(authors.data.allAuthors)
-
   const submit = (e) => {
     e.preventDefault()
 

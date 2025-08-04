@@ -1,6 +1,26 @@
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
+const { GraphQLError } = require('graphql')
 const { v1: uuid } = require('uuid')
+
+const mongoose = require('mongoose')
+mongoose.set('strictQuery', false)
+
+const Author = require('./models/author')
+const Book = require('./models/book')
+require('dotenv').config()
+
+const MONGODB_URI = process.env.MONGODB_URI
+console.log('connecting to', MONGODB_URI)
+
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('connected to mongodb')
+  })
+  .catch((error) => {
+    console.log('error connecting to mongodb', error.message)
+  })
+
 
 let authors = [
   {
@@ -90,7 +110,7 @@ const typeDefs = `
   type Book {
     title: String!
     published: Int!
-    author: String!
+    author: Author!
     id: String!
     genres: [String!]
   }
@@ -111,8 +131,8 @@ const typeDefs = `
   type Mutation {
     addBook(
       title: String!
-      published: Int!
       author: String!
+      published: Int!
       genres: [String!]!
     ) : Book
     editAuthor(
@@ -124,60 +144,85 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    bookCount: () => books.length,
-    authorCount: () => authors.length,
-    allBooks: (root, args) => {
-      let filteredBooks = books // base case if args are not present
+    bookCount: () => Book.collection.countDocuments(),
+    authorCount: () => Author.collection.countDocuments(),
+    allBooks: async (root, args) => {
+      let filteredBooks = await Book.find({}).populate('author') // base case if args are not present
 
-      if (args.name) { // if name filter is on
-        filteredBooks = filteredBooks.filter(book => book.author === args.name)
-      }
+      // if (args.name) { // if name filter is on
+      //   filteredBooks = filteredBooks.filter(book => book.author === args.name)
+      // }
 
-      if (args.genre) { // if genre filter is on
-        filteredBooks = filteredBooks.filter(book => book.genres.includes(args.genre))
-      }
+      // if (args.genre) { // if genre filter is on
+      //   filteredBooks = filteredBooks.filter(book => book.genres.includes(args.genre))
+      // }
 
       return filteredBooks
     },
-    allAuthors: () => {
-      return authors.map(author => {
-        const bookCount = books.filter(book => book.author === author.name).length
-        return {
-          name: author.name,
-          born: author.born,
-          bookCount: bookCount
-        }
-      })
+    allAuthors: async () => {
+      const authors = await Author.find({})
+      const mappedAuthors = await Promise.all(
+        authors.map(async (author) => {
+          const bookCount = await Book.countDocuments({ author: author._id })
+          return {
+            name: author.name,
+            born: author.born,
+            bookCount: bookCount
+          }
+        })
+      )
+      return (mappedAuthors)
     }
   },
   Mutation: {
-    addBook: (root, args) => {
-      if (!authors.find(author => author.name === args.author)) {
-        const newAuthor = {
-          name: args.author,
-          born: null,
-          id: uuid()
+    addBook: async (root, args) => {
+      let author = await Author.findOne({ name: args.author })
+      // checking if author exists, if not create new author to database
+      if (!author) {
+        author = new Author({name: args.author})
+        try {
+          await author.save()
+        } catch (error) {
+          throw new GraphQLError('Saving new author failed', {
+            extensions: {
+              code: 'BAD_USER_INPUT',
+              invalidArgs: args.author, error
+            }
+          })
         }
-        authors = authors.concat(newAuthor)
       }
-      const newBook = {
-        ...args,
-        id: uuid()
+      
+      const book = new Book({ ...args, author: author._id })
+      // saving book to database
+      try {
+        await book.save()
+      } catch (error) {
+        throw new GraphQLError('Saving book failed', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.title, error
+          }
+        })
       }
-      books = books.concat(newBook)
-      return newBook
+      return book.populate('author')
     },
-    editAuthor: (root, args) => {
-      const authorToEdit = authors.find(author => author.name === args.name)
+    editAuthor: async (root, args) => {
+      const authorToEdit = await Author.findOne({name: args.name})
       if (!authorToEdit) {
         return null
       }
-      const updatedAuthor = {
-        ...authorToEdit,
-        born: args.setBornTo
+      authorToEdit.born = args.setBornTo
+      try {
+        await authorToEdit.save()
+      } catch {
+        throw new GraphQLError('Updating author failed', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.name, error
+          }
+        })
       }
-      authors = authors.map(author => author.name !== args.name ? author : updatedAuthor)
-      return updatedAuthor
+      return authorToEdit
     }
   }
 }
