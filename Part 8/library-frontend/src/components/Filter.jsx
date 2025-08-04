@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { ALL_AUTHORS, ALL_BOOKS } from '../queries'
+import { ALL_AUTHORS } from '../queries'
 
 const Filter = ({ author, genre, setAuthor, setGenre, uniqueGenres }) => {
   const authors = useQuery(ALL_AUTHORS)
