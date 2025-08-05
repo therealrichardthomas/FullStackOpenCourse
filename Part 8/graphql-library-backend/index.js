@@ -188,21 +188,15 @@ const resolvers = {
       return Book.find(filter).populate('author')
     },
     allAuthors: async () => {
-      const authors = await Author.find({})
-      const mappedAuthors = await Promise.all(
-        authors.map(async (author) => {
-          const bookCount = await Book.countDocuments({ author: author._id })
-          return {
-            name: author.name,
-            born: author.born,
-            bookCount: bookCount
-          }
-        })
-      )
-      return (mappedAuthors)
+      return Author.find({})
     },
     me: (root, args, context) => {
-      return context.currentUser
+      return context.currentUser || null
+    }
+  },
+  Author: {
+    bookCount: async (root) => {
+      return Book.countDocuments({ author: root._id })
     }
   },
   Mutation: {
@@ -263,7 +257,7 @@ const resolvers = {
       authorToEdit.born = args.setBornTo
       try {
         await authorToEdit.save()
-      } catch {
+      } catch (error) {
         throw new GraphQLError('Updating author failed', {
           extensions: {
             code: 'BAD_USER_INPUT',
@@ -298,7 +292,7 @@ const resolvers = {
     
       const userForToken = {
         username: user.username,
-        id: user._id
+        id: user._id.toString()
       }
 
       return { value: jwt.sign(userForToken, process.env.JWT_SECRET) }
@@ -315,14 +309,18 @@ startStandaloneServer(server, {
   listen: { port: 4000 },
   context: async ({ req, res }) => {
     const auth = req ? req.headers.authorization : null
-    if (auth && auth.startsWith('Bearer')) {
-      const decodedToken = jwt.verify(
-        auth.substring(7), process.env.JWT_SECRET
-      )
-      const currentUser = await User.findById(decodedToken.id)
-      return { currentUser }
+    if (auth && auth.startsWith('Bearer ')) {
+      const token = auth.substring(7)
+      try {
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+        const currentUser = await User.findById(decodedToken.id)
+        return { currentUser }
+      } catch (error) {
+        console.log('Invalid token: ', error.message)
+        return { currentUser: null }
+      }
     }
-    return {}
+    return { currentUser: null }
   }
 }).then(({ url }) => {
   console.log(`Server ready at ${url}`)

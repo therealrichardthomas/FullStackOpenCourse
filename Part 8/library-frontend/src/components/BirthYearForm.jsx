@@ -10,7 +10,11 @@ const BirthYearForm = () => {
   const authors = useQuery(ALL_AUTHORS)
 
   const [editAuthor] = useMutation(EDIT_AUTHOR, {
-    refetchQueries: [{ query: ALL_AUTHORS }]
+    refetchQueries: [{ query: ALL_AUTHORS }],
+    onCompleted: async () => {
+      setName('')
+      setBorn('')
+    }
   })
 
   if (authors.loading) {
@@ -21,9 +25,6 @@ const BirthYearForm = () => {
     e.preventDefault()
 
     editAuthor({ variables: { name, setBornTo: Number(born) }})
-
-    setName('')
-    setBorn('')
   }
 
 
@@ -32,7 +33,7 @@ const BirthYearForm = () => {
       <h2>Set birthyear</h2>
       <form onSubmit={submit}>
         <div>
-          <select onChange={e => setName(e.target.value)}>
+          <select value={name} onChange={e => setName(e.target.value)}>
             <option value="">Select an author</option>
             {authors.data.allAuthors.map(author => (
               <option key={author.name} value={author.name}>{author.name}</option>
