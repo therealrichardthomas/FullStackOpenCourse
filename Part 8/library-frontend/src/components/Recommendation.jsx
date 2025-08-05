@@ -9,18 +9,19 @@ const Recommendation = (props) => {
     fetchPolicy: 'network-only',
   })
 
-  if (userResult.error) {
-    console.error('User query failed:', userResult.error)
-    return <div>Please log in to see recommendations</div>
-  }
-
+  
   const favoriteGenre = userResult?.data?.me?.favoriteGenre
-
+  
   const booksResult = useQuery(ALL_BOOKS, {
     variables: { genre: favoriteGenre},
     skip: !favoriteGenre
   })
-
+  
+  if (userResult.error) {
+    console.error('User query failed:', userResult.error)
+    return <div>Please log in to see recommendations</div>
+  }
+  
   if (!props.show) {
     return null
   }
