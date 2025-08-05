@@ -12,16 +12,27 @@ const PersonForm = ({ setError }) => {
 
   // returns an array, the first element is the function
   const [createPerson] = useMutation(CREATE_PERSON, {
-    refetchQueries: [{ query: ALL_PERSONS }], // calls ALL_PERSONS to update the page with the new mutation
     onError: (error) => {
       const messages = error.graphQLErrors.map(e => e.message).join('\n')
       setError(messages)
-    }
+    },
+    update: (cache, response) => {
+      cache.updateQuery({ query: ALL_PERSONS }, ({ allPersons }) => {
+        return {
+          allPersons: allPersons.concat(response.data.addPerson)
+        }
+      })
+    },
   })
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    createPerson({ variables: {name, phone, street, city }})
+    createPerson({
+      variables: { 
+        name, street, city,
+        phone: phone.length > 0 ? phone : undefined
+      }
+    })
     setName('')
     setPhone('')
     setStreet('')
