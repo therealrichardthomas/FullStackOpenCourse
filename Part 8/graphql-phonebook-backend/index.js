@@ -1,13 +1,21 @@
 const { ApolloServer } = require('@apollo/server')
-const { startStandaloneServer } = require('@apollo/server/standalone')
-const { GraphQLError } = require('graphql')
+const { expressMiddleware } = require('@as-integrations/express5')
+const { ApolloServerPluginDrainHttpServer } = require('@apollo/server/plugin/drainHttpServer')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
+const express = require('express')
+const cors = require('cors')
+const http = require('http')
+const { WebSocketServer } = require('ws')
+const { useServer } = require('graphql-ws/use/ws')
+
 const jwt = require('jsonwebtoken')
 
 const mongoose = require('mongoose')
 mongoose.set('strictQuery', false)
 
-const Person = require('./models/person')
 const User = require('./models/user')
+const typeDefs = require('./schema')
+const resolvers = require('./resolvers')
 require('dotenv').config()
 
 const MONGODB_URI = process.env.MONGODB_URI
@@ -21,232 +29,68 @@ mongoose.connect(MONGODB_URI)
     console.log('error connecting to mongodb', error.message)
   })
 
-
-let persons = [
-  {
-    name: "Arto Hellas",
-    phone: "040-123543",
-    street: "Tapiolankatu 5 A",
-    city: "Espoo",
-    id: "3d594650-3436-11e9-bc57-8b80ba54c431"
-  },
-  {
-    name: "Matti Luukkainen",
-    phone: "040-432342",
-    street: "Malminkaari 10 A",
-    city: "Helsinki",
-    id: '3d599470-3436-11e9-bc57-8b80ba54c431'
-  },
-  {
-    name: "Venla Ruuska",
-    street: "Nallemäentie 22 C",
-    city: "Helsinki",
-    id: '3d599471-3436-11e9-bc57-8b80ba54c431'
-  },
-]
-
-const typeDefs = `
-  type Address {
-    street: String!
-    city: String!
-  }
-
-  type Person {
-    name: String!
-    phone: String
-    address: Address!
-    id: ID!
-  }
-
-  enum YesNo {
-    YES
-    NO
-  }
-
-  type User {
-    username: String!
-    friends: [Person!]!
-    id: ID!
-  }
-
-  type Token {
-    value: String!
-  }
-
-  type Query {
-    personCount: Int!
-    allPersons(phone: YesNo): [Person!]!
-    findPerson(name: String!): Person
-    me: User
-  }
-
-  type Mutation {
-    addPerson(
-      name: String!
-      phone: String
-      street: String!
-      city: String!
-    ) : Person
-    editNumber(
-      name: String!
-      phone: String!
-    ) : Person
-    createUser (
-      username: String!
-    ) : User
-    login(
-      username: String!
-      password: String!
-    ) : Token
-    addAsFriend(
-      name: String!
-    ) : User
-  }
-`
+mongoose.set('debug', true)
 
 
-// each field of each type in the schema must have a resolver; types not defined in resolvers are given default resolvers
-const resolvers = {
-  Query: {
-    personCount: async () => Person.collection.countDocuments(),
-    allPersons: async (root, args) => {
-      if (!args.phone) {
-        return Person.find({})
-      }
-      return Person.find({ phone: { $exists: args.phone === 'YES' } })
-    },
-    findPerson: async (root, args) => Person.findOne({ name: args.name }),
-    me: (root, args, context) => {
-      return context.currentUser
-    }
-  },
-  // because the Person schema doesn't match the format of the persons array (contains address, array does not), then we must define a resolver for address ourselves 
-  Person: {
-    address: (root) => {
-      return {
-        street: root.street,
-        city: root.city
-      }
-    }
-  },
-  Mutation: {
-    addPerson: async (root, args, context) => {
-      const person = new Person({...args})
-      const currentUser = context.currentUser
-      
-      if (!currentUser) {
-        throw new GraphQLError('not authenticated', {
-          extensions: {
-            code: 'BAD_USER_INPUT'
-          }
-        })
-      }
+const start = async () => {
+  const app = express()
+  const httpServer = http.createServer(app)
 
-      try {
-        await person.save()
-        currentUser.friends = currentUser.friends.concat(person)
-        await currentUser.save()
-      } catch (error) {
-        throw new GraphQLError('Saving person failed', {
-          extensions: {
-            code: 'BAD_USER_INPUT',
-            invalidArgs: args.name, error
-          }
-        })
-      }
-      return person
-    },
-    editNumber: async (root, args) => {
-      const person = await Person.findOne({ name: args.name })
-      person.phone = args.phone
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/'
+  })
 
-      try {
-        await person.save()
-      } catch(error) {
-        throw new GraphQLError('Saving number failed', {
-          extensions: {
-            code: 'BAD_USER_INPUT',
-            invalidArgs: args.name, error
-          }
-        })
-      }
-      return person
-    },
-    createUser: async (root, args) => {
-      const user = new User({ username: args.username })
+  const schema = makeExecutableSchema({ typeDefs, resolvers })
+  const serverCleanup = useServer({ schema }, wsServer)
 
-      return user.save()
-        .catch((error) => {
-          throw new GraphQLError('creating the user failed', {
-            extensions: {
-              code: 'BAD_USER_INPUT',
-              invalidArgs: args.username, error
+  const server = new ApolloServer({
+    schema,
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose()
             }
-          })
-        })
-    },
-    login: async (root, args) => {
-      const user = await User.findOne({ username: args.username })
-      if (!user || args.password !== 'secret') {
-        throw new GraphQlError('wrong credentials', {
-          extensions: {
-            code: 'BAD_USER_INPUT'
           }
-        })
+        }
       }
-      const userForToken = {
-        username: args.username,
-        id: user._id
-      }
-      return { value: jwt.sign(userForToken, process.env.JWT_SECRET)}
-    },
-    addAsFriend: async (root, args, { currentUser }) => {
-      // map every friends's id and check if the parameter person is one of these friends
-      const isFriend = (person) => currentUser.friends.map(friend => friend._id.toString()).includes(person._id.toString())
+    ],
+  })
 
-      if (!currentUser) {
-        throw new GraphQLError('wrong credentials', {
-          extensions: {
-            code: 'BAD_USER_INPUT'
+  await server.start()
+
+  app.use(
+    '/',
+    cors(),
+    express.json(), 
+    expressMiddleware(server, {
+      context: async ({ req }) => {
+        const auth = req ? req.headers.authorization : null
+        if (auth && auth.startsWith('Bearer ')) {
+          try {
+            const decodedToken = jwt.verify(
+              auth.substring(7), process.env.JWT_SECRET
+            )
+            const currentUser = await User.findById(decodedToken.id).populate('friends')
+            return { currentUser } 
+          } catch (error) {
+            console.log('ERROR: ', error.message)
+            return {}
           }
-        })
-      }
+        }
+        return {}
+      },
+    })
+  )
 
-      const person = await Person.findOne({ name: args.name })
-      if (!isFriend(person)) {
-        currentUser.friends = currentUser.friends.concat(person)
-      }
-      await currentUser.save()
+  const PORT = 4000
 
-      return currentUser
-    }
-  }
+  httpServer.listen(PORT, () => {
+    console.log(`Server is now running on http://localhost:${PORT}`)
+  })
 }
 
-
-
-
-
-
-
-const server = new ApolloServer({
-  typeDefs,
-  resolvers
-})
-
-startStandaloneServer(server, {
-  listen: { port: 4000 },
-  context: async ({ req, res }) => {
-    const auth = req ? req.headers.authorization : null
-    if (auth && auth.startsWith('Bearer')) {
-      const decodedToken = jwt.verify(
-        auth.substring(7), process.env.JWT_SECRET
-      )
-      const currentUser = await User.findById(decodedToken.id).populate('friends')
-      return { currentUser } 
-    }
-    return {}
-  }
-}).then(({ url }) => {
-  console.log(`server ready at ${url}`)
-})
+start()
