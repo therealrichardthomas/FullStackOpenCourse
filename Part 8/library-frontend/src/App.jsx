@@ -6,7 +6,7 @@ import Books from "./components/Books";
 import NewBook from "./components/NewBook";
 import LoginForm from "./components/LoginForm"
 import Recommendation from "./components/Recommendation"
-import { ALL_BOOKS, BOOK_ADDED } from "./queries"
+import { ALL_AUTHORS, ALL_BOOKS, BOOK_ADDED } from "./queries"
 
 
 export const updateCache = (cache, query, addedBook) => {
@@ -32,9 +32,9 @@ const App = () => {
   useSubscription(BOOK_ADDED, {
     onData: ({ data, client }) => {
       const addedBook = data.data.bookAdded
-      // window.alert(`book '${addedBook.title}' has been added`)
       console.log(addedBook)
       updateCache(client.cache, { query: ALL_BOOKS }, addedBook)
+      client.refetchQueries({ include: [ALL_BOOKS, ALL_AUTHORS]})
     },
     onError: (error) => {
       console.error("Subscription error: ", error)

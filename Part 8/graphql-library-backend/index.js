@@ -13,6 +13,7 @@ const jwt = require('jsonwebtoken')
 
 const mongoose = require('mongoose')
 mongoose.set('strictQuery', false)
+mongoose.set('debug', true)
 
 const User = require('./models/user')
 const typeDefs = require('./schema')
