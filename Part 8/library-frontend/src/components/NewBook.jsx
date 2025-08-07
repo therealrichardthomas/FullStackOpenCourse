@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { ADD_BOOK, ALL_AUTHORS, ALL_BOOKS } from '../queries'
+import { updateCache } from '../App'
 
 
 
@@ -20,6 +21,9 @@ const NewBook = (props) => {
       setGenres([])
       setGenre('')
       props.setPage('books')
+    },
+    update: (cache, response) => {
+      updateCache(cache, { query: ALL_BOOKS, }, response.data.addBook)
     }
   })
 

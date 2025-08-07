@@ -9,8 +9,6 @@ import PhoneForm from './components/PhoneForm'
 import LoginForm from './components/LoginForm'
 
 
-
-
 export const updateCache = (cache, query, addedPerson) => {
   const uniqByName = (a) => {
     let seen = new Set()
