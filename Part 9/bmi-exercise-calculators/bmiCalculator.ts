@@ -1,15 +1,31 @@
 
+interface BmiValues {
+  height: number;
+  weight: number;
+}
 
-const calculateBmi = (args: string[]): string => {
+const parseArguments = (args: string[]): BmiValues=> {
   if (args.length < 4) throw new Error('not enough arguments');
   if (args.length > 4) throw new Error('too many arguments');
 
-  if (isNaN(Number(args[2])) || isNaN(Number(args[3]))) {
+  const height = Number(args[2]);
+  const weight = Number(args[3]);
+  if (!isNaN(height) || !isNaN(weight)) {
+    return {
+      height,
+      weight
+    }
+  } else {
     throw new Error('all provided arguments must be numbers');
   }
 
-  const heightInM: number = Number(args[2])/100;
-  const bmi: number = Number(args[3])/(heightInM * heightInM);
+}
+
+
+export const calculateBmi = (height: number, weight: number): string => {
+  if (height <= 0 || weight <= 0) throw new Error('Height and weight must be postiive values');
+  const heightInM: number = height/100;
+  const bmi: number = weight/(heightInM * heightInM);
 
   if (bmi < 16.0) {
     return "Underweight (severe thinness)";
@@ -30,12 +46,15 @@ const calculateBmi = (args: string[]): string => {
   }
 }
 
-try {
-  console.log(calculateBmi(process.argv))
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    console.log(error.message);
-  } else {
-    console.log("something went wrong");
+if (require.main === module) {
+  try {
+    const { height, weight } = parseArguments(process.argv)
+    console.log(calculateBmi(height, weight))
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.log(error.message);
+    } else {
+      console.log("something went wrong");
+    }
   }
 }

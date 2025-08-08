@@ -9,6 +9,7 @@ interface Result {
   average: number;
 }
 
+
 const calculateExercises = (args: string[]): Result => {
   if (args.length < 4) throw new Error('not enough arguments');
 
