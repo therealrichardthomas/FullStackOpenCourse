@@ -9,22 +9,33 @@ interface Result {
   average: number;
 }
 
+interface ExerciseValues {
+  target: number;
+  dailyHrs: number[];
+}
 
-const calculateExercises = (args: string[]): Result => {
+const parseArguments = (args: string[]): ExerciseValues => {
   if (args.length < 4) throw new Error('not enough arguments');
 
-  const period = args.slice(3).map(Number); // converting string array to number array
+  const dailyHrs = args.slice(3).map(Number); // converting string array to number array
   const target = Number(args[2]);
 
-  if (isNaN(target) || period.some(isNaN)) {
+  if (isNaN(target) || dailyHrs.some(isNaN)) {
     throw new Error('all provided arguments must be numbers');
   }
 
-  const periodLength: number = args.length - 3; // -3: two for scripts and one for the target
-  const trainingDays: number = period.filter(dayHrs => Number(dayHrs) > 0).length;
+  return {
+    target,
+    dailyHrs
+  };
+};
 
-  const average: number = period.reduce((accumulator, currentValue) => {
-    return accumulator + currentValue;
+export const calculateExercises = (dailyHrs: number[], target: number): Result => {
+  const periodLength: number = dailyHrs.length;
+  const trainingDays: number = dailyHrs.filter(dayHrs => dayHrs > 0).length;
+
+  const average: number = dailyHrs.reduce((sumHrs, hour) => {
+    return sumHrs + hour;
   }, 0) / periodLength;
 
   const success: boolean = average >= target;
@@ -47,15 +58,18 @@ const calculateExercises = (args: string[]): Result => {
     ratingDescription,
     target,
     average
-  }
-}
+  };
+};
 
-try {
-  console.log(calculateExercises(process.argv));
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    console.log(error.message);
-  } else {
-    console.log('something went wrong');
+if (require.main === module) {
+  try {
+    const { target, dailyHrs } = parseArguments(process.argv);
+    console.log(calculateExercises(dailyHrs, target));
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.log(error.message);
+    } else {
+      console.log('something went wrong');
+    }
   }
 }

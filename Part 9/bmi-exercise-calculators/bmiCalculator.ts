@@ -14,12 +14,11 @@ const parseArguments = (args: string[]): BmiValues=> {
     return {
       height,
       weight
-    }
+    };
   } else {
     throw new Error('all provided arguments must be numbers');
   }
-
-}
+};
 
 
 export const calculateBmi = (height: number, weight: number): string => {
@@ -44,12 +43,12 @@ export const calculateBmi = (height: number, weight: number): string => {
   } else {
     return "Obese (Class III)";
   }
-}
+};
 
 if (require.main === module) {
   try {
-    const { height, weight } = parseArguments(process.argv)
-    console.log(calculateBmi(height, weight))
+    const { height, weight } = parseArguments(process.argv);
+    console.log(calculateBmi(height, weight));
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.log(error.message);
