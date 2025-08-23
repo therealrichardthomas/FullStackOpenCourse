@@ -1,13 +1,8 @@
-
-interface CourseParts {
-  name: string;
-  exerciseCount: number;
-}
+import type { CoursePart } from '../types';
 
 interface CoursePartsProps {
-  courseParts: CourseParts[];
+  courseParts: CoursePart[];
 }
-
 
 const Total = ({ courseParts }: CoursePartsProps) => {
   const total = courseParts.reduce((sum, part) => {
