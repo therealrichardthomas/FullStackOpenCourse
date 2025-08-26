@@ -5,7 +5,6 @@ import { getAllDiaries, addDiary } from './services/diaryService';
 import DiaryForm from './components/DiaryForm';
 
 const App = () => {
-  // const [newDiary, setNewDiary] = useState<NewDiaryEntry>()
   const [diaries, setDiaries] = useState<NonSensitiveDiaryEntry[]>([])
 
   useEffect(()=> {
