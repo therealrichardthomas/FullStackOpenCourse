@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import { NewPatientSchema } from './utils';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface Entry {
-  
-}
 export interface Diagnosis {
   code: string;
   name: string;
@@ -30,3 +26,54 @@ export interface Patient {
 export type NewPatientEntry = z.infer<typeof NewPatientSchema>;
 
 export type NonSensitivePatientEntry = Omit<Patient, 'ssn' | 'entries'>;
+
+interface BaseEntry {
+  id: string;
+  description: string;
+  date: string;
+  specialist: string;
+  diagnosisCodes?: Array<Diagnosis['code']>;
+}
+
+export enum HealthCheckRating {
+  'Healthy' = 0,
+  'LowRisk' = 1,
+  'HighRisk' = 2,
+  'CriticalRisk' = 3
+}
+
+interface HealthCheckEntry extends BaseEntry {
+  type: "HealthCheck";
+  healthCheckRating: HealthCheckRating;
+}
+
+interface SickLeaveEntry {
+  startDate: string;
+  endDate: string;
+}
+
+interface OccupationalHealthcareEntry extends BaseEntry {
+  type: "OccupationalHealthcare";
+  employerName: string;
+  sickLeave?: SickLeaveEntry;
+}
+
+interface DischargeEntry {
+  date: string;
+  criteria: string;
+}
+
+interface HospitalEntry extends BaseEntry {
+  type: "Hospital";
+  discharge: DischargeEntry;
+}
+
+export type Entry =
+  | HospitalEntry
+  | OccupationalHealthcareEntry
+  | HealthCheckEntry;
+
+// Define special omit for unions
+type UnionOmit<T, K extends string | number | symbol> = T extends unknown ? Omit<T, K> : never;
+// Define Entry without the 'id' property
+export type EntryWithoutId = UnionOmit<Entry, 'id'>;
