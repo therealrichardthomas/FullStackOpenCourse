@@ -8,7 +8,8 @@ import {
   MenuItem,
   Checkbox,
   ListItemText,
-  OutlinedInput
+  OutlinedInput,
+  SelectChangeEvent
  } from '@mui/material';
 
 interface EntryFormProps {
@@ -53,7 +54,7 @@ const EntryForm = ({ onSubmit, onCancel, diagnoses}: EntryFormProps) => {
   const [dischargeDate, setDischargeDate] = useState('');
   const [criteria, setCriteria] = useState('');
 
-  const handleDiagnosisCodesChange = (event: React.ChangeEvent<{value: string}>) => {
+  const handleDiagnosisCodesChange = (event: SelectChangeEvent<typeof diagnosisCodes>) => {
     const value = event.target.value;
     
     const newCodes = typeof value === 'string' ? value.split(',') : value;
